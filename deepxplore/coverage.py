@@ -43,12 +43,15 @@ class NeuronCoverageTracker:
             # 배치 내 어느 샘플이든 threshold를 넘으면 activated로 기록
             activated = (act > self.threshold).any(dim=0)  # (neurons,)
 
-            if name not in self.covered:
-                self.covered[name] = set()
-                self.total[name] = activated.numel()
+            # 같은 ReLU 인스턴스가 다른 shape으로 재사용될 때(e.g. Bottleneck)
+            # 뉴런 수를 키에 포함해 별도로 추적한다
+            key = f"{name}_{activated.numel()}"
+            if key not in self.covered:
+                self.covered[key] = set()
+                self.total[key] = activated.numel()
 
             indices = activated.nonzero(as_tuple=True)[0].tolist()
-            self.covered[name].update(indices)
+            self.covered[key].update(indices)
 
         return hook
 
